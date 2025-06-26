@@ -21,6 +21,7 @@ class PMHQTrayApp:
         self.tray_icon = None
         self.is_tray = False
         self.root.bind('<Unmap>', self.on_minimize)
+        self.create_tray_icon()
 
     def start_process(self):
         if self.proc is not None:
@@ -48,7 +49,6 @@ class PMHQTrayApp:
                 data = self.pty.read(1024)
                 if not data:
                     break
-                # pywinpty.PtyProcess.read() 返回 str，不需要 decode
                 self.append_text(data)
         except Exception as e:
             self.append_text(f"\n读取输出时发生错误: {e}\n")
@@ -72,10 +72,20 @@ class PMHQTrayApp:
         self.hide_window()
 
     def create_tray_icon(self):
-        # 创建一个简单的图标
+        # 创建一个五角星图标
         image = Image.new('RGB', (64, 64), color=(0, 128, 255))
         d = ImageDraw.Draw(image)
-        d.ellipse((16, 16, 48, 48), fill=(255, 255, 255))
+        # 五角星顶点坐标
+        from math import sin, cos, pi
+        cx, cy, r1, r2 = 32, 32, 24, 10
+        points = []
+        for i in range(10):
+            angle = pi/2 + i * pi/5
+            r = r1 if i % 2 == 0 else r2
+            x = cx + r * cos(angle)
+            y = cy - r * sin(angle)
+            points.append((x, y))
+        d.polygon(points, fill=(255,255,255))
         
         # --- 主要修改在这里 ---
         menu = (
@@ -102,9 +112,6 @@ class PMHQTrayApp:
     def show_window(self, icon=None, item=None):
         self.is_tray = False
         self.root.after(0, self.root.deiconify)
-        if self.tray_icon:
-            self.tray_icon.stop()
-            self.tray_icon = None
 
     def exit_app(self, icon=None, item=None):
         if self.tray_icon:
